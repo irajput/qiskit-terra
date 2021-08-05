@@ -104,6 +104,7 @@ Circuit Analysis
    CountOpsLongestPath
    NumTensorFactors
    DAGLongestPath
+   CheckGatesInBasis
 
 Synthesis
 =============
@@ -210,3 +211,4 @@ from .utils import DAGFixedPoint
 from .utils import FixedPoint
 from .utils import Error
 from .utils import RemoveBarriers
+from .utils import CheckGatesInBasis

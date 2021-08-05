@@ -59,7 +59,7 @@ from qiskit.transpiler.passes import ASAPSchedule
 from qiskit.transpiler.passes import AlignMeasures
 from qiskit.transpiler.passes import ValidatePulseGates
 from qiskit.transpiler.passes import Error
-
+from qiskit.transpiler.passes import CheckGatesInBasis
 from qiskit.transpiler import TranspilerError
 
 
@@ -195,6 +195,11 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
         raise TranspilerError("Invalid routing method %s." % routing_method)
 
     # 5. Unroll to the basis
+    _gates_in_basis_check=[CheckGatesInBasis(basis_gates)]
+    
+    def _unroll_condition(property_set):
+        return not property_set["all_gates_in_basis"]
+
     if translation_method == "unroller":
         _unroll = [Unroller(basis_gates)]
     elif translation_method == "translator":
@@ -266,7 +271,6 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
         ),
         AlignMeasures(alignment=timing_constraints.acquire_alignment),
     ]
-
     # Build pass manager
     pm3 = PassManager()
     pm3.append(_unroll3q)
@@ -279,12 +283,16 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
         pm3.append(_embed)
         pm3.append(_swap_check)
         pm3.append(_swap, condition=_swap_condition)
-    pm3.append(_unroll)
+    #pm3.append(_gates_in_basis_check+ _unroll, condition=_unroll_condition)
+
+    pm3.append( _unroll)
     if coupling_map and not coupling_map.is_symmetric:
         pm3.append(_direction_check)
         pm3.append(_direction, condition=_direction_condition)
     pm3.append(_reset)
-    pm3.append(_depth_check + _opt + _unroll, do_while=_opt_control)
+    pm3.append(_depth_check  +_opt+_unroll,do_while=_opt_control)
+
+    #pm3.append(_depth_check +  _gates_in_basis_check +_unroll +_opt , condition=_unroll_condition,do_while=_opt_control)
     pm3.append(_scheduling)
     pm3.append(_alignments)
 

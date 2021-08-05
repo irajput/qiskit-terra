@@ -24,3 +24,4 @@ from .dag_fixed_point import DAGFixedPoint
 from .fixed_point import FixedPoint
 from .error import Error
 from .remove_barriers import RemoveBarriers
+from .check_gates_in_basis import CheckGatesInBasis
