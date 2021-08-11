@@ -198,6 +198,7 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
     _gates_in_basis_check=[CheckGatesInBasis(basis_gates)]
     
     def _unroll_condition(property_set):
+        print("Checking the unroll condition...", not property_set["all_gates_in_basis"])
         return not property_set["all_gates_in_basis"]
 
     if translation_method == "unroller":
@@ -221,6 +222,26 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
     else:
         raise TranspilerError("Invalid translation method %s." % translation_method)
 
+    def _ifUnroll(property_set):
+        global _unroll
+      
+        if(property_set['all_gates_in_basis']):
+            print("HERE AT ALL GATES IN BASIS")
+            _unroll=[]
+        else:
+            _unroll = [
+            Unroll3qOrMore(),
+            Collect2qBlocks(),
+            ConsolidateBlocks(basis_gates=basis_gates),
+            UnitarySynthesis(
+                basis_gates,
+                approximation_degree=approximation_degree,
+                coupling_map=coupling_map,
+                backend_props=backend_properties,
+            ),
+        ]
+        return not property_set["all_gates_in_basis"]
+    
     # 6. Fix any CX direction mismatch
     _direction_check = [CheckGateDirection(coupling_map)]
 
@@ -234,6 +255,7 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
     _depth_check = [Depth(), FixedPoint("depth")]
 
     def _opt_control(property_set):
+        print("Checking the opt condition...", not property_set["depth_fixed_point"])
         return not property_set["depth_fixed_point"]
 
     _reset = [RemoveResetInZeroState()]
@@ -271,6 +293,8 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
         ),
         AlignMeasures(alignment=timing_constraints.acquire_alignment),
     ]
+
+    
     # Build pass manager
     pm3 = PassManager()
     pm3.append(_unroll3q)
@@ -283,6 +307,7 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
         pm3.append(_embed)
         pm3.append(_swap_check)
         pm3.append(_swap, condition=_swap_condition)
+    
     pm3.append(_gates_in_basis_check+ _unroll, condition=_unroll_condition)
 
     if coupling_map and not coupling_map.is_symmetric:
@@ -290,7 +315,9 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
         pm3.append(_direction, condition=_direction_condition)
     pm3.append(_reset)
 
-    pm3.append(_depth_check +  _opt+_gates_in_basis_check +_unroll , condition=_unroll_condition,do_while=_opt_control)
+    pm3.append(_depth_check +_opt,_gates_in_basis_check +_unroll,condition=_unroll_condition,do_while=_opt_control)
+    
+    #While depth needs to be less -> optimize -> unroll only if unroll condition
     pm3.append(_scheduling)
     pm3.append(_alignments)
 

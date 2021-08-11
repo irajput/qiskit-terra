@@ -37,6 +37,5 @@ class CheckGatesInBasis(AnalysisPass):
                 if gate.name not in self._basis_gates:
                     all_basis_gates=False
                     break
-        print("all basis gates",all_basis_gates)
-        print("basis gates: ",self._basis_gates)
+        
         self.property_set["all_gates_in_basis"] = all_basis_gates
