@@ -24,6 +24,7 @@ from qiskit.circuit.library.standard_gates import CXGate
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.passes.synthesis import unitary_synthesis
+from qiskit.transpiler.passes.utils.check_gates_in_basis import CheckGatesInBasis
 
 
 class ConsolidateBlocks(TransformationPass):
@@ -68,6 +69,15 @@ class ConsolidateBlocks(TransformationPass):
         Iterate over each block and replace it with an equivalent Unitary
         on the same wires.
         """
+
+        pass_ = CheckGatesInBasis(self.basis_gates)
+        pass_.run(dag)
+        
+        print("\nGates in Basis Check in Consolidate Blocks: ", pass_.property_set["all_gates_in_basis"])
+        if pass_.property_set["all_gates_in_basis"]:
+            
+            print("...Not running Consolidate Blocks!")
+            return dag
 
         if self.decomposer is None:
             return dag

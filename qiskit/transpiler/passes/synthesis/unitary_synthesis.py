@@ -27,7 +27,7 @@ from qiskit.quantum_info.synthesis.two_qubit_decompose import TwoQubitBasisDecom
 from qiskit.circuit.library.standard_gates import iSwapGate, CXGate, CZGate, RXXGate, ECRGate
 from qiskit.providers.models import BackendProperties
 from qiskit.providers.exceptions import BackendPropertyError
-
+from qiskit.transpiler.passes.utils.check_gates_in_basis import CheckGatesInBasis
 
 def _choose_kak_gate(basis_gates):
     """Choose the first available 2q gate to use in the KAK decomposition."""
@@ -144,6 +144,13 @@ class UnitarySynthesis(TransformationPass):
                    gate direction can't be determined from the coupling map or the
                    relative gate lengths.
         """
+        pass_ = CheckGatesInBasis(self._basis_gates)
+        pass_.run(dag)
+        
+        print("\nGates in Basis Check in Unitary Synthesis: ", pass_.property_set["all_gates_in_basis"])
+        if pass_.property_set["all_gates_in_basis"]:
+            print("...Not running Unitary Synthesis!")
+            return dag
 
         euler_basis = _choose_euler_basis(self._basis_gates)
         kak_gate = _choose_kak_gate(self._basis_gates)

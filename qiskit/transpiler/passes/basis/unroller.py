@@ -11,11 +11,11 @@
 # that they have been altered from the originals.
 
 """Unroll a circuit to a given basis."""
-
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.exceptions import QiskitError
 from qiskit.circuit import ControlledGate
 from qiskit.converters.circuit_to_dag import circuit_to_dag
+
 
 
 class Unroller(TransformationPass):
@@ -48,6 +48,7 @@ class Unroller(TransformationPass):
         Returns:
             DAGCircuit: output unrolled dag
         """
+       
         if self.basis is None:
             return dag
         # Walk through the DAG and expand each non-basis node
