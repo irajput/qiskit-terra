@@ -267,6 +267,9 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
         AlignMeasures(alignment=timing_constraints.acquire_alignment),
     ]
 
+    from qiskit.transpiler.runningpassmanager import ConditionalController
+    cc=[ConditionalController(_unroll_check+_unroll,condition=_unroll_condition)]
+    
     # Build pass manager
     pm3 = PassManager()
     pm3.append(_unroll3q)
