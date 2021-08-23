@@ -159,7 +159,6 @@ class RunningPassManager:
                 self._update_valid_passes(pass_)
         elif isinstance(pass_,FlowController):
             
-            
             if not(isinstance(pass_.condition,partial)):
                 pass_.condition = partial(pass_.condition,self.fenced_property_set)
                 #pass_.condition=partial(pass_.condition.func,self.fenced_property_set)
@@ -341,7 +340,6 @@ class DoWhileController(FlowController):
 
             if not self.do_while():
                 return
-        print("\n")
         raise TranspilerError("Maximum iteration reached. max_iteration=%i" % self.max_iteration)
 
 
@@ -353,12 +351,12 @@ class ConditionalController(FlowController):
         super().__init__(passes, options, **partial_controller)
 
     def __iter__(self):
-        print("\n",self.condition,"\n")
+        print("\n","..... Condition to Check:",self.condition(),"\n")
         
         if self.condition():
             print("\n........iterating",self.condition(),'\n')
             yield from self.passes
-
+            print("\n")
 
 # Default controllers
 FlowController.add_flow_controller("condition", ConditionalController)
