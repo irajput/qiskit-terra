@@ -59,6 +59,7 @@ from qiskit.transpiler.passes import ASAPSchedule
 from qiskit.transpiler.passes import AlignMeasures
 from qiskit.transpiler.passes import ValidatePulseGates
 from qiskit.transpiler.passes import Error
+from qiskit.transpiler.passes import CheckGatesInBasis
 
 from qiskit.transpiler import TranspilerError
 
@@ -230,6 +231,11 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
 
     def _opt_control(property_set):
         return not property_set["depth_fixed_point"]
+    
+    _unroll_check=[CheckGatesInBasis(basis_gates)]
+    
+    def _unroll_condition(property_set):
+        return not property_set["all_gates_in_basis"]
 
     _reset = [RemoveResetInZeroState()]
 
