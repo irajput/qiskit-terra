@@ -59,6 +59,7 @@ from qiskit.transpiler.passes import ASAPSchedule
 from qiskit.transpiler.passes import AlignMeasures
 from qiskit.transpiler.passes import ValidatePulseGates
 from qiskit.transpiler.passes import Error
+from qiskit.transpiler.passes import CheckGatesInBasis
 
 from qiskit.transpiler import TranspilerError
 
@@ -231,6 +232,10 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
     def _opt_control(property_set):
         return not property_set["depth_fixed_point"]
 
+    _unroll_check=[CheckGatesInBasis(basis_gates)]
+    def _unroll_condition(property_set):
+        return not property_set["all_gates_in_basis"]
+
     _reset = [RemoveResetInZeroState()]
 
     _meas = [OptimizeSwapBeforeMeasure(), RemoveDiagonalGatesBeforeMeasure()]
@@ -266,26 +271,35 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
         ),
         AlignMeasures(alignment=timing_constraints.acquire_alignment),
     ]
-
+#conditionalcontroller([_unroll,condition()])
     # Build pass manager
-    pm3 = PassManager()
-    pm3.append(_unroll3q)
-    pm3.append(_reset + _meas)
-    if coupling_map or initial_layout:
-        pm3.append(_given_layout)
-        pm3.append(_choose_layout_0, condition=_choose_layout_condition)
-        pm3.append(_choose_layout_1, condition=_trivial_not_perfect)
-        pm3.append(_choose_layout_2, condition=_csp_not_found_match)
-        pm3.append(_embed)
-        pm3.append(_swap_check)
-        pm3.append(_swap, condition=_swap_condition)
-    pm3.append(_unroll)
-    if coupling_map and not coupling_map.is_symmetric:
-        pm3.append(_direction_check)
-        pm3.append(_direction, condition=_direction_condition)
-    pm3.append(_reset)
-    pm3.append(_depth_check + _opt + _unroll, do_while=_opt_control)
-    pm3.append(_scheduling)
-    pm3.append(_alignments)
 
+
+    from qiskit.transpiler.runningpassmanager import FlowController,ConditionalController
+    cc=[ConditionalController(_unroll_check+_unroll,condition=_unroll_condition)]
+   
+
+
+
+
+    pm3 = PassManager()
+    # pm3.append(_unroll3q)
+    # pm3.append(_reset + _meas)
+    # if coupling_map or initial_layout:
+    #     pm3.append(_given_layout)
+    #     pm3.append(_choose_layout_0, condition=_choose_layout_condition)
+    #     pm3.append(_choose_layout_1, condition=_trivial_not_perfect)
+    #     pm3.append(_choose_layout_2, condition=_csp_not_found_match)
+    #     pm3.append(_embed)
+    #     pm3.append(_swap_check)
+    #     pm3.append(_swap, condition=_swap_condition)
+    # pm3.append(_unroll)
+    # if coupling_map and not coupling_map.is_symmetric:
+    #     pm3.append(_direction_check)
+    #     pm3.append(_direction, condition=_direction_condition)
+    # pm3.append(_reset)
+    
+    pm3.append(_depth_check + _opt +cc, do_while=_opt_control) #do [_unroll, condition=]
+    # pm3.append(_scheduling)
+    # pm3.append(_alignments)
     return pm3

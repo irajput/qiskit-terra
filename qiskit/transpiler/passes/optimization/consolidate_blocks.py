@@ -70,14 +70,14 @@ class ConsolidateBlocks(TransformationPass):
         on the same wires.
         """
 
-        pass_ = CheckGatesInBasis(self.basis_gates)
-        pass_.run(dag)
+        # pass_ = CheckGatesInBasis(self.basis_gates)
+        # pass_.run(dag)
         
-        print("\nGates in Basis Check in Consolidate Blocks: ", pass_.property_set["all_gates_in_basis"])
-        if pass_.property_set["all_gates_in_basis"]:
+        # print("\nGates in Basis Check in Consolidate Blocks: ", pass_.property_set["all_gates_in_basis"])
+        # if pass_.property_set["all_gates_in_basis"]:
             
-            print("...Not running Consolidate Blocks!")
-            return dag
+        #     print("...Not running Consolidate Blocks!")
+        #     return dag
 
         if self.decomposer is None:
             return dag

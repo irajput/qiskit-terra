@@ -144,14 +144,6 @@ class UnitarySynthesis(TransformationPass):
                    gate direction can't be determined from the coupling map or the
                    relative gate lengths.
         """
-        pass_ = CheckGatesInBasis(self._basis_gates)
-        pass_.run(dag)
-        
-        print("\nGates in Basis Check in Unitary Synthesis: ", pass_.property_set["all_gates_in_basis"])
-        if pass_.property_set["all_gates_in_basis"]:
-            print("...Not running Unitary Synthesis!")
-            return dag
-
         euler_basis = _choose_euler_basis(self._basis_gates)
         kak_gate = _choose_kak_gate(self._basis_gates)
         decomposer1q, decomposer2q = None, None

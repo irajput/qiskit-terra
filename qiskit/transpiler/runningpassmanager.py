@@ -13,9 +13,10 @@
 """RunningPassManager class for the transpiler.
 This object holds the state of a pass manager during running-time."""
 
-from functools import partial
+from functools import partial, partialmethod
 from collections import OrderedDict
 import logging
+from qiskit.transpiler.basepasses import BasePass
 from time import time
 
 from qiskit.dagcircuit import DAGCircuit
@@ -76,6 +77,7 @@ class RunningPassManager:
             TranspilerError: if a pass in passes is not a proper pass.
         """
         # attaches the property set to the controller so it has access to it.
+        
         if isinstance(passes, ConditionalController):
             passes.condition = partial(passes.condition, self.fenced_property_set)
             self.working_list.append(passes)
@@ -117,7 +119,6 @@ class RunningPassManager:
 
         if callback:
             self.callback = callback
-
         for passset in self.working_list:
             for pass_ in passset:
                 dag = self._do_pass(pass_, dag, passset.options)
@@ -144,18 +145,34 @@ class RunningPassManager:
         Raises:
             TranspilerError: If the pass is not a proper pass instance.
         """
+    
+        if isinstance(pass_,BasePass):
+            # First, do the requires of pass_
+            for required_pass in pass_.requires:
+                dag = self._do_pass(required_pass, dag, options)
 
-        # First, do the requires of pass_
-        for required_pass in pass_.requires:
-            dag = self._do_pass(required_pass, dag, options)
+            # Run the pass itself, if not already run
+            if pass_ not in self.valid_passes:
+                dag = self._run_this_pass(pass_, dag)
 
-        # Run the pass itself, if not already run
-        if pass_ not in self.valid_passes:
-            dag = self._run_this_pass(pass_, dag)
+                # update the valid_passes property
+                self._update_valid_passes(pass_)
+        elif isinstance(pass_,FlowController):
+            
+            
+            if not(isinstance(pass_.condition,partial)):
+                pass_.condition = partial(pass_.condition,self.fenced_property_set)
+                #pass_.condition=partial(pass_.condition.func,self.fenced_property_set)
+            for _pass in pass_:
 
-            # update the valid_passes property
-            self._update_valid_passes(pass_)
-
+                self._do_pass(_pass,dag,pass_.options)
+            #     do pass
+            
+            # for _pass in pass_.passes:
+                
+            #     self._do_pass(_pass,dag,pass_.options)
+            #self.working_list.append(pass_.passes)
+                
         return dag
 
     def _run_this_pass(self, pass_, dag):
@@ -239,7 +256,7 @@ class FlowController:
         Returns:
              dict: {'options': self.options, 'passes': [passes], 'type': type(self)}
         """
-        # TODO remove
+        
         ret = {"options": self.options, "passes": [], "type": type(self)}
         for pass_ in self._passes:
             if isinstance(pass_, FlowController):
@@ -318,12 +335,13 @@ class DoWhileController(FlowController):
         super().__init__(passes, options, **partial_controller)
 
     def __iter__(self):
+        print('\n.....do while loop')
         for _ in range(self.max_iteration):
             yield from self.passes
 
             if not self.do_while():
                 return
-
+        print("\n")
         raise TranspilerError("Maximum iteration reached. max_iteration=%i" % self.max_iteration)
 
 
@@ -335,7 +353,10 @@ class ConditionalController(FlowController):
         super().__init__(passes, options, **partial_controller)
 
     def __iter__(self):
+        print("\n",self.condition,"\n")
+        
         if self.condition():
+            print("\n........iterating",self.condition(),'\n')
             yield from self.passes
 
 
