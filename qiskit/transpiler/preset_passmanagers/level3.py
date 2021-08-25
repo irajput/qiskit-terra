@@ -16,7 +16,6 @@ Level 3 pass manager: heavy optimization by noise adaptive qubit mapping and
 gate cancellation using commutativity rules and unitary synthesis.
 """
 
-
 from qiskit.transpiler.passmanager_config import PassManagerConfig
 from qiskit.transpiler.timing_constraints import TimingConstraints
 from qiskit.transpiler.passmanager import PassManager
@@ -59,6 +58,7 @@ from qiskit.transpiler.passes import ASAPSchedule
 from qiskit.transpiler.passes import AlignMeasures
 from qiskit.transpiler.passes import ValidatePulseGates
 from qiskit.transpiler.passes import Error
+from qiskit.transpiler.passes import GatesInBasis
 
 from qiskit.transpiler import TranspilerError
 
@@ -266,6 +266,15 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
         ),
         AlignMeasures(alignment=timing_constraints.acquire_alignment),
     ]
+    # Build nested conditional pass manager
+    _unroll_check=[GatesInBasis(basis_gates)]
+    def _unroll_cond(property_set):
+        return not property_set["all_gates_in_basis"]
+    
+    pm_cond=PassManager()
+    pm_cond.append(_unroll_check+_unroll,condition=_unroll_cond)
+    pm_opt=PassManager()
+    pm_opt.append(_depth_check+_opt)
 
     # Build pass manager
     pm3 = PassManager()
@@ -284,7 +293,8 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
         pm3.append(_direction_check)
         pm3.append(_direction, condition=_direction_condition)
     pm3.append(_reset)
-    pm3.append(_depth_check + _opt + _unroll, do_while=_opt_control)
+    #pm3.append(_depth_check + _opt + pm_cond, do_while=_opt_control)
+    pm3.append(pm_opt+pm_cond,do_while=_opt_control)
     pm3.append(_scheduling)
     pm3.append(_alignments)
 
