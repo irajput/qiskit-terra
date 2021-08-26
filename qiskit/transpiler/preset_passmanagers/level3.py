@@ -271,10 +271,8 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
     def _unroll_cond(property_set):
         return not property_set["all_gates_in_basis"]
     
-    pm_cond=PassManager()
-    pm_cond.append(_unroll_check+_unroll,condition=_unroll_cond)
-    pm_opt=PassManager()
-    pm_opt.append(_depth_check+_opt)
+    pm_condition=PassManager()
+    pm_condition.append(_unroll,condition=_unroll_cond)
 
     # Build pass manager
     pm3 = PassManager()
@@ -293,8 +291,7 @@ def level_3_pass_manager(pass_manager_config: PassManagerConfig) -> PassManager:
         pm3.append(_direction_check)
         pm3.append(_direction, condition=_direction_condition)
     pm3.append(_reset)
-    #pm3.append(_depth_check + _opt + pm_cond, do_while=_opt_control)
-    pm3.append(pm_opt+pm_cond,do_while=_opt_control)
+    pm3.append(_depth_check+_opt+_unroll_check+[pm_condition],do_while=_opt_control)
     pm3.append(_scheduling)
     pm3.append(_alignments)
 
